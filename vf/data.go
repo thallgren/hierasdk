@@ -1,7 +1,6 @@
-// Package v contains everything necessary to ensure type safe JSON serialization of implementors of
-// the Data interface. The set of implementations is not meant to be extended and is hard coded into
-// the implementations of Equal and ToData.
-package v
+// Package vf contains everything necessary to ensure type safe JSON serialization of implementors of
+// the Data interface. The set of implementations is fixed and hard wired into the ToData function.
+package vf
 
 import (
 	"bytes"
@@ -9,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -149,22 +149,30 @@ func (d Map) MarshalJSON() ([]byte, error) {
 	return json.Marshal((map[string]Data)(d))
 }
 
-// String returns '{' <key>:<value> [',' <key>:<value> ...] '}'
+// String returns '{' <key>:<value> [',' <key>:<value> ...] '}' sorted in alphabetical order of the keys
 func (d Map) String() string {
+	l := len(d)
+	if l == 0 {
+		return `{}`
+	}
+	ks := make([]string, l)
+	i := 0
+	for k := range d {
+		ks[i] = k
+		i++
+	}
+	sort.Strings(ks)
 	b := strings.Builder{}
 	dl := '{'
-	for k, v := range d {
+	for i = range ks {
+		k := ks[i]
 		_, _ = b.WriteRune(dl)
 		dl = ','
 		_, _ = b.WriteString(k)
 		_, _ = b.WriteRune(':')
-		_, _ = b.WriteString(v.String())
+		_, _ = b.WriteString(d[k].String())
 	}
-	if dl == '{' {
-		_, _ = b.WriteString(`{}`)
-	} else {
-		_, _ = b.WriteRune('}')
-	}
+	_, _ = b.WriteRune('}')
 	return b.String()
 }
 
@@ -273,44 +281,43 @@ func UnmarshalJSONData(j []byte) Data {
 
 // ToData converts the given value to a Data value
 func ToData(v interface{}) Data {
+	if d, ok := v.(Data); ok {
+		return d
+	}
 	return reflectToData(reflect.ValueOf(v))
 }
 
 func reflectToData(rv reflect.Value) (d Data) {
 	k := rv.Kind()
-	if k == reflect.Invalid {
-		return nil
-	}
-	if rv.Type().Name() != `` {
-		return namedToData(rv)
-	}
-	switch k {
-	case reflect.Invalid:
+	switch {
+	case reflect.Invalid == k:
 		d = nil
-	case reflect.Slice:
+	case reflect.Slice == k:
 		d = sliceToData(rv)
-	case reflect.String:
-		d = String(rv.String())
-	case reflect.Map:
+	case reflect.String == k:
+		d = stringToData(rv.Interface())
+	case reflect.Map == k:
 		d = mapToData(rv)
-	case reflect.Interface:
+	case reflect.Interface == k:
 		d = reflectToData(rv.Elem())
-	case reflect.Bool:
+	case reflect.Bool == k:
 		d = Bool(rv.Bool())
-	case reflect.Int:
+	case reflect.Int <= k && k <= reflect.Int64:
 		d = Int(rv.Int())
-	case reflect.Uint:
+	case reflect.Uint <= k && k <= reflect.Uint64:
 		d = Int(rv.Uint())
-	case reflect.Float32, reflect.Float64:
+	case reflect.Float32 == k || reflect.Float64 == k:
 		d = Float(rv.Float())
 	default:
-		panic(fmt.Errorf(`unable to create Data from %#v`, rv))
+		panic(fmt.Errorf(`unable to create Data from %#v, kind %d`, rv, rv.Kind()))
 	}
 	return
 }
 
-func namedToData(rv reflect.Value) (d Data) {
-	switch v := rv.Interface().(type) {
+func stringToData(v interface{}) (d Data) {
+	switch v := v.(type) {
+	case string:
+		d = String(v)
 	case json.Number:
 		if i, err := v.Int64(); err == nil {
 			d = Int(i)
@@ -319,7 +326,7 @@ func namedToData(rv reflect.Value) (d Data) {
 			d = Float(f)
 		}
 	default:
-		panic(fmt.Errorf(`unable to create Data from %#v`, v))
+		panic(fmt.Errorf(`unable to create Data from %T %#v`, v, v))
 	}
 	return
 }
