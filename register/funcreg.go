@@ -34,6 +34,14 @@ func (r *funcReg) EachLookupKey(actor func(name string, f hiera.LookupKey)) {
 	r.sortedEach(r.lookupKeys, func(n string, f interface{}) { actor(n, f.(hiera.LookupKey)) })
 }
 
+// Empty returns true if no functions have been registered
+func (r *funcReg) Empty() bool {
+	r.lock.RLock()
+	empty := len(r.dataDigs)+len(r.dataHashes)+len(r.lookupKeys) == 0
+	r.lock.RUnlock()
+	return empty
+}
+
 // DataDig registers a DataDig function under the given name
 func (r *funcReg) DataDig(name string, f hiera.DataDig) {
 	r.register(&r.dataDigs, `data_dig`, name, f)
@@ -112,4 +120,9 @@ func EachDataHash(actor func(name string, f hiera.DataHash)) {
 // EachLookupKey calls the given actor once with each registered LookupKey function in the global registry
 func EachLookupKey(actor func(name string, f hiera.LookupKey)) {
 	global.EachLookupKey(actor)
+}
+
+// Empty returns true if no functions have been registered with the global registry
+func Empty() bool {
+	return global.Empty()
 }
