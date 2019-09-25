@@ -72,6 +72,8 @@ func sendData(w http.ResponseWriter, d vf.Data) error {
 	return json.NewEncoder(w).Encode(d)
 }
 
+// Register create a http.ServeMux and add handlers to it for all lookup functions that has been registered with
+// register.DataDig, register.DataHash, and register.LookupKey. The created ServeMux is returned.
 func Register() *http.ServeMux {
 	if register.Empty() {
 		panic(errors.New(`no lookup functions have been registered`))

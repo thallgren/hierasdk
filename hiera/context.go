@@ -21,6 +21,7 @@ type (
 	}
 )
 
+// NewProviderContext creates a context containing the values of the the "options" key in the given url.Values.
 func NewProviderContext(q url.Values) ProviderContext {
 	var opts vf.Map
 	if jo := q.Get(`options`); jo != `` {
