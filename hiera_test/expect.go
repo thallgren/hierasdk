@@ -8,18 +8,18 @@ import (
 	"github.com/lyraproj/hierasdk/vf"
 )
 
-// Equal expects a.Equal(b) to be true
-func Equal(t *testing.T, a, b vf.Data) {
+// Equals expects a.Equals(b) to be true
+func Equals(t *testing.T, a, b vf.Data) {
 	t.Helper()
-	if !a.Equal(b) {
+	if !a.Equals(b) {
 		t.Errorf(`expected %s, got %s`, a, b)
 	}
 }
 
-// NotEqual expects a.Equal(b) to be false
+// NotEqual expects a.Equals(b) to be false
 func NotEqual(t *testing.T, a, b vf.Data) {
 	t.Helper()
-	if a.Equal(b) {
+	if a.Equals(b) {
 		t.Errorf(`did not expected %s and %s to be equal`, a, b)
 	}
 }

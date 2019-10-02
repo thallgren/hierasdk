@@ -19,7 +19,7 @@ func ensureFailed(t *testing.T, f func(t *testing.T)) {
 
 func TestExpect(t *testing.T) {
 	ensureFailed(t, func(ft *testing.T) {
-		expect.Equal(ft, vf.String(`a`), vf.String(`b`))
+		expect.Equals(ft, vf.String(`a`), vf.String(`b`))
 	})
 
 	ensureFailed(t, func(ft *testing.T) {

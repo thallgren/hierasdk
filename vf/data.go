@@ -20,8 +20,8 @@ type (
 		fmt.Stringer
 		json.Marshaler
 
-		// Equal returns the result of comparing this instance with the given value
-		Equal(d Data) bool
+		// Equals returns the result of comparing this instance with the given value
+		Equals(d Data) bool
 	}
 
 	// Binary is the Data type for []byte
@@ -63,8 +63,8 @@ const timestampName = `Timestamp`
 var rTypeKey = reflect.ValueOf(typeKey)
 var rValueKey = reflect.ValueOf(valueKey)
 
-// Equal returns the result of comparing this instance with the given value
-func (d Binary) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d Binary) Equals(o Data) bool {
 	if cb, ok := o.(Binary); ok {
 		return bytes.Equal(d, cb)
 	}
@@ -81,8 +81,8 @@ func (d Binary) String() string {
 	return fmt.Sprintf(`Binary(%q)`, base64.StdEncoding.Strict().EncodeToString(d))
 }
 
-// Equal returns the result of comparing this instance with the given value
-func (d Bool) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d Bool) Equals(o Data) bool {
 	return d == o
 }
 
@@ -100,8 +100,8 @@ func (d Bool) String() string {
 	return s
 }
 
-// Equal returns the result of comparing this instance with the given value
-func (d Float) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d Float) Equals(o Data) bool {
 	return d == o
 }
 
@@ -115,8 +115,8 @@ func (d Float) String() string {
 	return strconv.FormatFloat(float64(d), 'g', -1, 64)
 }
 
-// Equal returns the result of comparing this instance with the given value
-func (d Int) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d Int) Equals(o Data) bool {
 	return d == o
 }
 
@@ -130,11 +130,11 @@ func (d Int) String() string {
 	return strconv.Itoa(int(d))
 }
 
-// Equal returns the result of comparing this instance with the given value
-func (d Map) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d Map) Equals(o Data) bool {
 	if od, ok := o.(Map); ok && len(d) == len(od) {
 		for k, av := range d {
-			if bv, ok := od[k]; ok && av.Equal(bv) {
+			if bv, ok := od[k]; ok && av.Equals(bv) {
 				continue
 			}
 			return false
@@ -176,10 +176,10 @@ func (d Map) String() string {
 	return b.String()
 }
 
-// Equal returns the result of comparing this instance with the given value
-func (d Sensitive) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d Sensitive) Equals(o Data) bool {
 	if od, ok := o.(Sensitive); ok {
-		return d.Unwrap().Equal(od.Unwrap())
+		return d.Unwrap().Equals(od.Unwrap())
 	}
 	return false
 }
@@ -199,11 +199,11 @@ func (d Sensitive) Unwrap() Data {
 	return d.Data
 }
 
-// Equal returns the result of comparing this instance with the given value
-func (d Slice) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d Slice) Equals(o Data) bool {
 	if od, ok := o.(Slice); ok && len(d) == len(od) {
 		for i := range d {
-			if !d[i].Equal(od[i]) {
+			if !d[i].Equals(od[i]) {
 				return false
 			}
 		}
@@ -234,8 +234,8 @@ func (d Slice) String() string {
 	return b.String()
 }
 
-// Equal returns the result of comparing this instance with the given value
-func (d String) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d String) Equals(o Data) bool {
 	return d == o
 }
 
@@ -249,8 +249,8 @@ func (d String) String() string {
 	return strconv.Quote(string(d))
 }
 
-// Equal returns the result of comparing this instance with the given value
-func (d Timestamp) Equal(o Data) bool {
+// Equals returns the result of comparing this instance with the given value
+func (d Timestamp) Equals(o Data) bool {
 	if od, ok := o.(Timestamp); ok {
 		return time.Time(d).Equal(time.Time(od))
 	}

@@ -10,40 +10,40 @@ import (
 )
 
 func TestEqual_binary(t *testing.T) {
-	expect.Equal(t, vf.Binary(`hello`), vf.Binary(`hello`))
+	expect.Equals(t, vf.Binary(`hello`), vf.Binary(`hello`))
 	expect.NotEqual(t, vf.Binary(`hello`), vf.Binary(`good bye`))
 	expect.NotEqual(t, vf.Binary(`hello`), vf.String(`hello`))
 }
 
 func TestEqual_bool(t *testing.T) {
-	expect.Equal(t, vf.Bool(true), vf.Bool(true))
+	expect.Equals(t, vf.Bool(true), vf.Bool(true))
 	expect.NotEqual(t, vf.Bool(true), vf.Bool(false))
 	expect.NotEqual(t, vf.Bool(true), vf.Int(1))
 }
 
 func TestEqual_slice(t *testing.T) {
-	expect.Equal(t, vf.Slice{vf.Int(1), vf.Int(2)}, vf.Slice{vf.Int(1), vf.Int(2)})
+	expect.Equals(t, vf.Slice{vf.Int(1), vf.Int(2)}, vf.Slice{vf.Int(1), vf.Int(2)})
 	expect.NotEqual(t, vf.Slice{vf.Int(1), vf.Int(2)}, vf.Slice{vf.Int(1), vf.Int(2), vf.Int(3)})
 	expect.NotEqual(t, vf.Slice{vf.Int(1), vf.Int(2)}, vf.Slice{vf.Int(1), vf.Int(3)})
 	expect.NotEqual(t, vf.Slice{vf.Int(1), vf.Int(2)}, vf.Map{`1`: vf.Int(3)})
 }
 
 func TestEqual_map(t *testing.T) {
-	expect.Equal(t, vf.Map{`one`: vf.Int(1), `two`: vf.Int(2)}, vf.Map{`one`: vf.Int(1), `two`: vf.Int(2)})
+	expect.Equals(t, vf.Map{`one`: vf.Int(1), `two`: vf.Int(2)}, vf.Map{`one`: vf.Int(1), `two`: vf.Int(2)})
 	expect.NotEqual(t, vf.Map{`one`: vf.Int(1), `two`: vf.Int(2)}, vf.Map{`one`: vf.Int(1), `two`: vf.Int(2), `three`: vf.Int(3)})
 	expect.NotEqual(t, vf.Map{`one`: vf.Int(1), `two`: vf.Int(2)}, vf.Map{`one`: vf.Int(1), `two`: vf.Int(3)})
 	expect.NotEqual(t, vf.Map{`one`: vf.Int(1), `two`: vf.Int(2)}, vf.Slice{vf.Int(1), vf.Int(2)})
 }
 
 func TestEqual_sensitive(t *testing.T) {
-	expect.Equal(t, vf.Sensitive{Data: vf.Int(5)}, vf.Sensitive{Data: vf.Int(5)})
+	expect.Equals(t, vf.Sensitive{Data: vf.Int(5)}, vf.Sensitive{Data: vf.Int(5)})
 	expect.NotEqual(t, vf.Sensitive{Data: vf.Int(5)}, vf.Sensitive{Data: vf.Int(4)})
 	expect.NotEqual(t, vf.Sensitive{Data: vf.Int(5)}, vf.Int(5))
 }
 
 func TestEqual_timestamp(t *testing.T) {
 	now := time.Now()
-	expect.Equal(t, vf.Timestamp(now), vf.Timestamp(now))
+	expect.Equals(t, vf.Timestamp(now), vf.Timestamp(now))
 	expect.NotEqual(t, vf.Timestamp(now), vf.Timestamp(now.Add(1)))
 	expect.NotEqual(t, vf.Timestamp(now), vf.Int(now.UnixNano()))
 }
@@ -104,7 +104,7 @@ func TestUnmarshalJSON_map(t *testing.T) {
 	if !ok {
 		t.Fatal(`expected nested Slice was not produced`)
 	}
-	expect.Equal(t, vf.Slice{vf.String(`a`), vf.String(`b`)}, ds)
+	expect.Equals(t, vf.Slice{vf.String(`a`), vf.String(`b`)}, ds)
 }
 
 func TestMarshalJSON_binary(t *testing.T) {
@@ -125,7 +125,7 @@ func TestUnmarshalJSON_binary(t *testing.T) {
 	if !ok {
 		t.Fatal(`expected Binary was not produced`)
 	}
-	expect.Equal(t, vf.Binary([]byte{1, 2, 3}), b)
+	expect.Equals(t, vf.Binary([]byte{1, 2, 3}), b)
 	expect.Panic(t, `illegal base64 data`, func() { vf.UnmarshalJSONData([]byte(`{"__ptype":"Binary","__pvalue":"AQP"}`)) })
 }
 
@@ -155,7 +155,7 @@ func TestUnmarshalJSON_sensitive(t *testing.T) {
 		`xqz`: vf.String(`obfuscated`),
 		`sx`:  vf.Int(123),
 	}}
-	expect.Equal(t, b, sd)
+	expect.Equals(t, b, sd)
 }
 
 func TestMarshalJSON_timestamp(t *testing.T) {
@@ -186,7 +186,7 @@ func TestUnmarshalJSON_timestamp(t *testing.T) {
 	if !ok {
 		t.Fatal(`expected Timestamp was not produced`)
 	}
-	expect.Equal(t, b, vf.Timestamp(now))
+	expect.Equals(t, b, vf.Timestamp(now))
 }
 
 func TestUnmarshalJSONData_bad(t *testing.T) {
@@ -230,26 +230,26 @@ func TestString_timestamp(t *testing.T) {
 }
 
 func TestToData_int(t *testing.T) {
-	expect.Equal(t, vf.ToData(5), vf.Int(5))
-	expect.Equal(t, vf.ToData(int8(5)), vf.Int(5))
-	expect.Equal(t, vf.ToData(int16(5)), vf.Int(5))
-	expect.Equal(t, vf.ToData(int32(5)), vf.Int(5))
-	expect.Equal(t, vf.ToData(int64(5)), vf.Int(5))
-	expect.Equal(t, vf.ToData(uint(5)), vf.Int(5))
-	expect.Equal(t, vf.ToData(uint8(5)), vf.Int(5))
-	expect.Equal(t, vf.ToData(uint16(5)), vf.Int(5))
-	expect.Equal(t, vf.ToData(uint32(5)), vf.Int(5))
-	expect.Equal(t, vf.ToData(uint64(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(5), vf.Int(5))
+	expect.Equals(t, vf.ToData(int8(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(int16(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(int32(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(int64(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(uint(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(uint8(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(uint16(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(uint32(5)), vf.Int(5))
+	expect.Equals(t, vf.ToData(uint64(5)), vf.Int(5))
 }
 
 func TestToData_data(t *testing.T) {
 	s := vf.String(`hello`)
-	expect.Equal(t, s, vf.ToData(s))
+	expect.Equals(t, s, vf.ToData(s))
 }
 
 func TestToData_float(t *testing.T) {
-	expect.Equal(t, vf.ToData(float32(5.0)), vf.Float(float32(5.0)))
-	expect.Equal(t, vf.ToData(5.0), vf.Float(5.0))
+	expect.Equals(t, vf.ToData(float32(5.0)), vf.Float(float32(5.0)))
+	expect.Equals(t, vf.ToData(5.0), vf.Float(5.0))
 }
 
 func TestToData_map_bad(t *testing.T) {

@@ -73,26 +73,46 @@ func sendData(w http.ResponseWriter, d vf.Data) error {
 }
 
 // Register create a http.ServeMux and add handlers to it for all lookup functions that has been registered with
-// register.DataDig, register.DataHash, and register.LookupKey. The created ServeMux is returned.
-func Register() *http.ServeMux {
+// register.DataDig, register.DataHash, and register.LookupKey. The created ServeMux is returned along with a
+// Map keyed by function type where each value is a Slice of function names.
+func Register() (http.Handler, vf.Map) {
 	if register.Empty() {
 		panic(errors.New(`no lookup functions have been registered`))
 	}
+
 	router := http.NewServeMux()
+
+	var dataDigNames vf.Slice
+	var dataHashNames vf.Slice
+	var lookupKeyNames vf.Slice
+
 	register.EachDataDig(func(name string, f hiera.DataDig) {
+		dataDigNames = append(dataDigNames, vf.String(name))
 		router.HandleFunc(`/data_dig/`+name, func(w http.ResponseWriter, r *http.Request) {
 			handleLookup(w, r, callDataDig, f)
 		})
 	})
 	register.EachDataHash(func(name string, f hiera.DataHash) {
+		dataHashNames = append(dataHashNames, vf.String(name))
 		router.HandleFunc(`/data_hash/`+name, func(w http.ResponseWriter, r *http.Request) {
 			handleLookup(w, r, callDataHash, f)
 		})
 	})
 	register.EachLookupKey(func(name string, f hiera.LookupKey) {
+		lookupKeyNames = append(lookupKeyNames, vf.String(name))
 		router.HandleFunc(`/lookup_key/`+name, func(w http.ResponseWriter, r *http.Request) {
 			handleLookup(w, r, callLookupKey, f)
 		})
 	})
-	return router
+	m := make(vf.Map)
+	if len(dataDigNames) > 0 {
+		m[`data_dig`] = dataDigNames
+	}
+	if len(dataHashNames) > 0 {
+		m[`data_hash`] = dataHashNames
+	}
+	if len(lookupKeyNames) > 0 {
+		m[`lookup_key`] = lookupKeyNames
+	}
+	return router, m
 }

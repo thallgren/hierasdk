@@ -24,52 +24,64 @@ func TestNoHandler(t *testing.T) {
 	}
 }
 
+func TestMetaHandler(t *testing.T) {
+	register.Clean()
+	register.DataDig(`my_dd`, func(ctx hiera.ProviderContext, key vf.Slice) vf.Data { return nil })
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) vf.Data { return nil })
+	register.LookupKey(`my_lk`, func(ctx hiera.ProviderContext, key string) vf.Data { return nil })
+	_, m := Register()
+	ex := vf.Map{`data_dig`: vf.Slice{vf.String(`my_dd`)}, `data_hash`: vf.Slice{vf.String(`my_dh`)}, `lookup_key`: vf.Slice{vf.String(`my_lk`)}}
+	if !m.Equals(ex) {
+		t.Errorf(`expected %s, got %s`, ex, m)
+	}
+}
+
 func TestDataDigHandler(t *testing.T) {
 	register.Clean()
-	register.DataDig(`my_dd_func`, func(ctx hiera.ProviderContext, key vf.Slice) vf.Data {
-		if key.Equal(vf.Slice{vf.String(`config`), vf.String(`path`)}) {
+	register.DataDig(`my_dd`, func(ctx hiera.ProviderContext, key vf.Slice) vf.Data {
+		if key.Equals(vf.Slice{vf.String(`config`), vf.String(`path`)}) {
 			return vf.String(`/a/b`)
 		}
 		return nil
 	})
-	testRequestResponse(t, "/data_dig/my_dd_func", url.Values{`key`: {`["config", "path"]`}}, http.StatusOK, `"/a/b"`)
-	testRequestResponse(t, "/data_dig/my_dd_func", url.Values{`key`: {`"config"`}}, http.StatusNotFound, `404 value not found`)
-	testRequestResponse(t, "/data_dig/my_rd_func", nil, http.StatusNotFound, `404 page not found`)
+	testRequestResponse(t, "/data_dig/my_dd", url.Values{`key`: {`["config", "path"]`}}, http.StatusOK, `"/a/b"`)
+	testRequestResponse(t, "/data_dig/my_dd", url.Values{`key`: {`"config"`}}, http.StatusNotFound, `404 value not found`)
+	testRequestResponse(t, "/data_dig/my_rd", nil, http.StatusNotFound, `404 page not found`)
 }
 
 func TestLookupKeyHandler(t *testing.T) {
 	register.Clean()
-	register.LookupKey(`my_lk_func`, func(ctx hiera.ProviderContext, key string) vf.Data {
+	register.LookupKey(`my_lk`, func(ctx hiera.ProviderContext, key string) vf.Data {
 		if key == `host` {
 			return ctx.ToData(`example.com`)
 		}
 		return nil
 	})
-	testRequestResponse(t, "/lookup_key/my_lk_func", url.Values{`key`: {`host`}}, http.StatusOK, `"example.com"`)
-	testRequestResponse(t, "/lookup_key/my_lk_func", url.Values{`key`: {``}}, http.StatusNotFound, `404 value not found`)
-	testRequestResponse(t, "/lookup_key/my_lk_func", url.Values{`key`: {`port`}}, http.StatusNotFound, `404 value not found`)
-	testRequestResponse(t, "/lookup_key/my_rk_func", url.Values{`key`: {`host`}}, http.StatusNotFound, `404 page not found`)
+	testRequestResponse(t, "/lookup_key/my_lk", url.Values{`key`: {`host`}}, http.StatusOK, `"example.com"`)
+	testRequestResponse(t, "/lookup_key/my_lk", url.Values{`key`: {``}}, http.StatusNotFound, `404 value not found`)
+	testRequestResponse(t, "/lookup_key/my_lk", url.Values{`key`: {`port`}}, http.StatusNotFound, `404 value not found`)
+	testRequestResponse(t, "/lookup_key/my_rk", url.Values{`key`: {`host`}}, http.StatusNotFound, `404 page not found`)
 }
 
 func TestDataHashHandler(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh_func`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) vf.Data {
 		return ctx.ToData(map[string]string{`host`: `example.com`})
 	})
-	testRequestResponse(t, "/data_hash/my_dh_func", nil, http.StatusOK, `{"host":"example.com"}`)
-	testRequestResponse(t, "/data_hash/my_rh_func", nil, http.StatusNotFound, `404 page not found`)
+	testRequestResponse(t, "/data_hash/my_dh", nil, http.StatusOK, `{"host":"example.com"}`)
+	testRequestResponse(t, "/data_hash/my_rh", nil, http.StatusNotFound, `404 page not found`)
 }
 
 func TestDataHashHandler_options(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh_func`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) vf.Data {
 		return ctx.Option(`map_to_deliver`)
 	})
-	testRequestResponse(t, "/data_hash/my_dh_func",
+	testRequestResponse(t, "/data_hash/my_dh",
 		url.Values{`options`: {`{"map_to_deliver": {"host": "example.com"}}`}}, http.StatusOK, `{"host":"example.com"}`)
-	testRequestResponse(t, "/data_hash/my_dh_func",
+	testRequestResponse(t, "/data_hash/my_dh",
 		url.Values{`options`: {`{"no_map_to_deliver": {"host": "example.com"}}`}}, http.StatusNotFound, `404 value not found`)
-	testRequestResponse(t, "/data_hash/my_dh_func", nil, http.StatusNotFound, `404 value not found`)
+	testRequestResponse(t, "/data_hash/my_dh", nil, http.StatusNotFound, `404 value not found`)
 }
 
 func TestDataHashHandler_panic(t *testing.T) {
@@ -90,15 +102,15 @@ func TestDataHashHandler_panic(t *testing.T) {
 
 func TestDataHashHandler_post(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh_func`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) vf.Data {
 		return ctx.ToData(map[string]string{`host`: `example.com`})
 	})
-	r, err := http.NewRequest("POST", "/data_hash/my_dh_func", nil)
+	r, err := http.NewRequest("POST", "/data_hash/my_dh", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-	handler := Register()
+	handler, _ := Register()
 	handler.ServeHTTP(rr, r)
 	status := rr.Code
 	expectedStatus := http.StatusMethodNotAllowed
@@ -118,7 +130,7 @@ func testRequestResponse(t *testing.T, path string, query url.Values, expectedSt
 	}
 
 	rr := httptest.NewRecorder()
-	handler := Register()
+	handler, _ := Register()
 	handler.ServeHTTP(rr, r)
 
 	status := rr.Code
