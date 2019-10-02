@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/lyraproj/hierasdk/vf"
-
 	"github.com/lyraproj/hierasdk/hiera"
 	"github.com/lyraproj/hierasdk/register"
+	"github.com/lyraproj/hierasdk/vf"
 )
 
 func callDataDig(q url.Values, f interface{}) vf.Data {

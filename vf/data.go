@@ -279,6 +279,26 @@ func UnmarshalJSONData(j []byte) Data {
 	return ToData(v)
 }
 
+// ToBool returns the bool that the given Data represents. The method panics unless the Data is an Bool
+func ToBool(d Data) bool {
+	return bool(d.(Bool))
+}
+
+// ToString returns the string that the given Data represents. The method panics unless the Data is a String
+func ToString(d Data) string {
+	return string(d.(String))
+}
+
+// ToInt returns the int that the given Data represents. The method panics unless the Data is an Int
+func ToInt(d Data) int {
+	return int(d.(Int))
+}
+
+// ToFloat returns the float64 that the given Data represents. The method panics unless the Data is an Float
+func ToFloat(d Data) float64 {
+	return float64(d.(Float))
+}
+
 // ToData converts the given value to a Data value
 func ToData(v interface{}) Data {
 	if d, ok := v.(Data); ok {
