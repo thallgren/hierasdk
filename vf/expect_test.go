@@ -39,6 +39,14 @@ func TestExpect(t *testing.T) {
 	})
 
 	ensureFailed(t, func(ft *testing.T) {
+		expect.True(ft, false)
+	})
+
+	ensureFailed(t, func(ft *testing.T) {
+		expect.False(ft, true)
+	})
+
+	ensureFailed(t, func(ft *testing.T) {
 		expect.Panic(ft, `nope`, func() {})
 	})
 

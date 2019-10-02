@@ -245,6 +245,11 @@ func TestToData_int(t *testing.T) {
 func TestToData_data(t *testing.T) {
 	s := vf.String(`hello`)
 	expect.Equals(t, s, vf.ToData(s))
+	expect.StringEqual(t, `hello`, vf.ToString(s))
+
+	expect.Panic(t, `vf.Data is vf.String, not vf.Float`, func() { vf.ToFloat(s) })
+	expect.Panic(t, `vf.Data is vf.String, not vf.Bool`, func() { vf.ToBool(s) })
+	expect.Panic(t, `vf.Data is vf.String, not vf.Int`, func() { vf.ToInt(s) })
 }
 
 func TestToData_float(t *testing.T) {

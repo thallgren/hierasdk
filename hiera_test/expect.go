@@ -9,18 +9,38 @@ import (
 )
 
 // Equals expects a.Equals(b) to be true
-func Equals(t *testing.T, a, b vf.Data) {
+func Equals(t *testing.T, a, b interface{}) {
 	t.Helper()
-	if !a.Equals(b) {
-		t.Errorf(`expected %s, got %s`, a, b)
+	ad := vf.ToData(a)
+	bd := vf.ToData(b)
+	if !ad.Equals(bd) {
+		t.Errorf(`expected %s, got %s`, ad, bd)
 	}
 }
 
 // NotEqual expects a.Equals(b) to be false
 func NotEqual(t *testing.T, a, b vf.Data) {
 	t.Helper()
-	if a.Equals(b) {
-		t.Errorf(`did not expected %s and %s to be equal`, a, b)
+	ad := vf.ToData(a)
+	bd := vf.ToData(b)
+	if ad.Equals(bd) {
+		t.Errorf(`did not expected %s and %s to be equal`, ad, bd)
+	}
+}
+
+// True expects b to be true
+func True(t *testing.T, b bool) {
+	t.Helper()
+	if !b {
+		t.Errorf(`expected true`)
+	}
+}
+
+// False expects b to be false
+func False(t *testing.T, b bool) {
+	t.Helper()
+	if b {
+		t.Errorf(`expected false`)
 	}
 }
 
