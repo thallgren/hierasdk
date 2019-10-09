@@ -1,5 +1,8 @@
 // Package vf contains everything necessary to ensure type safe JSON serialization of implementors of
-// the Data interface. The set of implementations is fixed and hard wired into the ToData function.
+// the Data interface. In addition to the JSON type set, the serialization will also handle Binary,
+// Sensitive, and Timestamp.
+//
+// The set of implementations is fixed and hard wired into the ToData function.
 package vf
 
 import (
