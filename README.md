@@ -11,7 +11,7 @@ calls.
 ## How to use
 hierasdk is a Go module and is best installed using the command:
 ```
-go get github.com/lyraproj/hierasdk`
+go get github.com/lyraproj/hierasdk
 ```
 Provided that Go version >= 1.13 is used, or that the `GO111MODULE=on` is set, this will add the dependency to
 the `go.mod` file of the plugin module.
