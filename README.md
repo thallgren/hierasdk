@@ -42,3 +42,6 @@ func myDataHash(c hiera.ProviderContext) vf.Data {
   return vf.ToData(dh)
 }
 ```
+
+## Third party dependencies
+None.
