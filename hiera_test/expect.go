@@ -1,3 +1,4 @@
+// Package expect contains a set of method useful when writing unit tests.
 package expect
 
 import (

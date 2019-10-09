@@ -1,3 +1,5 @@
+// Package routes provides the Register() function that creates the http.Handler. That
+// function is useful when writing tests using the "net/http/httptest" package.
 package routes
 
 import (

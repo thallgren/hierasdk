@@ -1,3 +1,4 @@
+// Package hiera provides the lookup function types and the ProviderContext
 package hiera
 
 import (

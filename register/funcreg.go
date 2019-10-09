@@ -1,3 +1,4 @@
+// Package register exposes the API for registering the Hiera lookup functions.
 package register
 
 import (

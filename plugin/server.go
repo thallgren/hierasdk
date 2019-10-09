@@ -1,5 +1,6 @@
 //+build !test
 
+// Package plugin exposes the API for starting the RESTful plugin service.
 package plugin
 
 import (
