@@ -8,9 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lyraproj/dgo/dgo"
+	"github.com/lyraproj/dgo/vf"
 	"github.com/lyraproj/hierasdk/hiera"
 	"github.com/lyraproj/hierasdk/register"
-	"github.com/lyraproj/hierasdk/vf"
 )
 
 func TestNoHandler(t *testing.T) {
@@ -26,11 +27,11 @@ func TestNoHandler(t *testing.T) {
 
 func TestMetaHandler(t *testing.T) {
 	register.Clean()
-	register.DataDig(`my_dd`, func(ctx hiera.ProviderContext, key vf.Slice) vf.Data { return nil })
-	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) vf.Data { return nil })
-	register.LookupKey(`my_lk`, func(ctx hiera.ProviderContext, key string) vf.Data { return nil })
+	register.DataDig(`my_dd`, func(ctx hiera.ProviderContext, key dgo.Array) dgo.Value { return nil })
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Value { return nil })
+	register.LookupKey(`my_lk`, func(ctx hiera.ProviderContext, key string) dgo.Value { return nil })
 	_, m := Register()
-	ex := vf.Map{`data_dig`: vf.Slice{vf.String(`my_dd`)}, `data_hash`: vf.Slice{vf.String(`my_dh`)}, `lookup_key`: vf.Slice{vf.String(`my_lk`)}}
+	ex := vf.Map(`data_dig`, vf.Values(`my_dd`), `data_hash`, vf.Values(`my_dh`), `lookup_key`, vf.Values(`my_lk`))
 	if !m.Equals(ex) {
 		t.Errorf(`expected %s, got %s`, ex, m)
 	}
@@ -38,8 +39,8 @@ func TestMetaHandler(t *testing.T) {
 
 func TestDataDigHandler(t *testing.T) {
 	register.Clean()
-	register.DataDig(`my_dd`, func(ctx hiera.ProviderContext, key vf.Slice) vf.Data {
-		if key.Equals(vf.Slice{vf.String(`config`), vf.String(`path`)}) {
+	register.DataDig(`my_dd`, func(ctx hiera.ProviderContext, key dgo.Array) dgo.Value {
+		if key.Equals(vf.Values(`config`, `path`)) {
 			return vf.String(`/a/b`)
 		}
 		return nil
@@ -51,7 +52,7 @@ func TestDataDigHandler(t *testing.T) {
 
 func TestLookupKeyHandler(t *testing.T) {
 	register.Clean()
-	register.LookupKey(`my_lk`, func(ctx hiera.ProviderContext, key string) vf.Data {
+	register.LookupKey(`my_lk`, func(ctx hiera.ProviderContext, key string) dgo.Value {
 		if key == `host` {
 			return ctx.ToData(`example.com`)
 		}
@@ -65,7 +66,7 @@ func TestLookupKeyHandler(t *testing.T) {
 
 func TestDataHashHandler(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Value {
 		return ctx.ToData(map[string]string{`host`: `example.com`})
 	})
 	testRequestResponse(t, "/data_hash/my_dh", nil, http.StatusOK, `{"host":"example.com"}`)
@@ -74,7 +75,7 @@ func TestDataHashHandler(t *testing.T) {
 
 func TestDataHashHandler_options(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Value {
 		return ctx.Option(`map_to_deliver`)
 	})
 	testRequestResponse(t, "/data_hash/my_dh",
@@ -86,13 +87,13 @@ func TestDataHashHandler_options(t *testing.T) {
 
 func TestDataHashHandler_panic(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh_string_panic`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh_string_panic`, func(ctx hiera.ProviderContext) dgo.Value {
 		panic(`goodbye`)
 	})
-	register.DataHash(`my_dh_error_panic`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh_error_panic`, func(ctx hiera.ProviderContext) dgo.Value {
 		panic(errors.New(`goodbye error`))
 	})
-	register.DataHash(`my_dh_int_panic`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh_int_panic`, func(ctx hiera.ProviderContext) dgo.Value {
 		panic(44)
 	})
 	testRequestResponse(t, "/data_hash/my_dh_string_panic", nil, http.StatusInternalServerError, `goodbye`)
@@ -102,7 +103,7 @@ func TestDataHashHandler_panic(t *testing.T) {
 
 func TestDataHashHandler_post(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) vf.Data {
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Value {
 		return ctx.ToData(map[string]string{`host`: `example.com`})
 	})
 	r, err := http.NewRequest("POST", "/data_hash/my_dh", nil)

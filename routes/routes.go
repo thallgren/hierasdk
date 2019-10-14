@@ -9,25 +9,30 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/lyraproj/dgo/dgo"
+	"github.com/lyraproj/dgo/vf"
 	"github.com/lyraproj/hierasdk/hiera"
 	"github.com/lyraproj/hierasdk/register"
-	"github.com/lyraproj/hierasdk/vf"
 )
 
-func callDataDig(q url.Values, f interface{}) vf.Data {
+func callDataDig(q url.Values, f interface{}) dgo.Value {
 	if k := q.Get(`key`); k != `` {
-		if key, ok := vf.UnmarshalJSONData([]byte(k)).(vf.Slice); ok {
+		v, err := vf.UnmarshalJSON([]byte(k))
+		if err != nil {
+			panic(err)
+		}
+		if key, ok := v.(dgo.Array); ok {
 			return f.(hiera.DataDig)(hiera.NewProviderContext(q), key)
 		}
 	}
 	return nil
 }
 
-func callDataHash(q url.Values, f interface{}) vf.Data {
+func callDataHash(q url.Values, f interface{}) dgo.Value {
 	return f.(hiera.DataHash)(hiera.NewProviderContext(q))
 }
 
-func callLookupKey(q url.Values, f interface{}) vf.Data {
+func callLookupKey(q url.Values, f interface{}) dgo.Value {
 	if key := q.Get(`key`); key != `` {
 		return f.(hiera.LookupKey)(hiera.NewProviderContext(q), key)
 	}
@@ -50,7 +55,7 @@ func catch(f func() error) (err error) {
 	return
 }
 
-func handleLookup(w http.ResponseWriter, r *http.Request, f func(url.Values, interface{}) vf.Data, luFunc interface{}) {
+func handleLookup(w http.ResponseWriter, r *http.Request, f func(url.Values, interface{}) dgo.Value, luFunc interface{}) {
 	if r.Method != http.MethodGet {
 		http.Error(w, ``, http.StatusMethodNotAllowed)
 		return
@@ -68,7 +73,7 @@ func handleLookup(w http.ResponseWriter, r *http.Request, f func(url.Values, int
 	}
 }
 
-func sendData(w http.ResponseWriter, d vf.Data) error {
+func sendData(w http.ResponseWriter, d dgo.Value) error {
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(d)
 }
@@ -76,16 +81,16 @@ func sendData(w http.ResponseWriter, d vf.Data) error {
 // Register create a http.ServeMux and add handlers to it for all lookup functions that has been registered with
 // register.DataDig, register.DataHash, and register.LookupKey. The created ServeMux is returned along with a
 // Map keyed by function type where each value is a Slice of function names.
-func Register() (http.Handler, vf.Map) {
+func Register() (http.Handler, dgo.Map) {
 	if register.Empty() {
 		panic(errors.New(`no lookup functions have been registered`))
 	}
 
 	router := http.NewServeMux()
 
-	var dataDigNames vf.Slice
-	var dataHashNames vf.Slice
-	var lookupKeyNames vf.Slice
+	var dataDigNames []dgo.Value
+	var dataHashNames []dgo.Value
+	var lookupKeyNames []dgo.Value
 
 	register.EachDataDig(func(name string, f hiera.DataDig) {
 		dataDigNames = append(dataDigNames, vf.String(name))
@@ -105,15 +110,15 @@ func Register() (http.Handler, vf.Map) {
 			handleLookup(w, r, callLookupKey, f)
 		})
 	})
-	m := make(vf.Map)
+	m := vf.MutableMap(nil)
 	if len(dataDigNames) > 0 {
-		m[`data_dig`] = dataDigNames
+		m.Put(`data_dig`, vf.Array(dataDigNames))
 	}
 	if len(dataHashNames) > 0 {
-		m[`data_hash`] = dataHashNames
+		m.Put(`data_hash`, vf.Array(dataHashNames))
 	}
 	if len(lookupKeyNames) > 0 {
-		m[`lookup_key`] = lookupKeyNames
+		m.Put(`lookup_key`, vf.Array(lookupKeyNames))
 	}
 	return router, m
 }

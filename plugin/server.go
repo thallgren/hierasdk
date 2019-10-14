@@ -15,9 +15,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lyraproj/dgo/dgo"
+	"github.com/lyraproj/dgo/vf"
 	"github.com/lyraproj/hierasdk/hiera"
 	"github.com/lyraproj/hierasdk/routes"
-	"github.com/lyraproj/hierasdk/vf"
 )
 
 const defaultMinPort = 10000
@@ -69,8 +70,8 @@ func getEnvInt(n string, defaultValue int) int {
 	return defaultValue
 }
 
-func startServer(listener net.Listener, router http.Handler, functions vf.Map, ow, ew io.Writer) int {
-	err := json.NewEncoder(ow).Encode(vf.Map{`version`: vf.Int(hiera.ProtoVersion), `address`: vf.String(listener.Addr().String()), `functions`: functions})
+func startServer(listener net.Listener, router http.Handler, functions dgo.Map, ow, ew io.Writer) int {
+	err := json.NewEncoder(ow).Encode(vf.Map(`version`, hiera.ProtoVersion, `address`, listener.Addr().String(), `functions`, functions))
 	if err != nil {
 		_, _ = fmt.Fprintln(ew, err)
 		return 1

@@ -4,14 +4,15 @@ package hiera
 import (
 	"net/url"
 
-	"github.com/lyraproj/hierasdk/vf"
+	"github.com/lyraproj/dgo/dgo"
+	"github.com/lyraproj/dgo/vf"
 )
 
 type (
 	// ProviderContext provides utility functions to a provider function
 	ProviderContext interface {
 		// Option returns the given option or nil if no such option exists
-		Option(option string) vf.Data
+		Option(option string) dgo.Value
 
 		// StringOption returns the option for the given name as a string and true provided that the option is present
 		// and is a string. If its missing, or if its found to be something other than a string, this
@@ -33,64 +34,68 @@ type (
 		FloatOption(option string) (float64, bool)
 
 		// ToData converts the given value into Data
-		ToData(value interface{}) vf.Data
+		ToData(value interface{}) dgo.Value
 	}
 
 	providerContext struct {
-		options vf.Map
+		options dgo.Map
 	}
 )
 
 // NewProviderContext creates a context containing the values of the the "options" key in the given url.Values.
 func NewProviderContext(q url.Values) ProviderContext {
-	var opts vf.Map
+	var opts dgo.Map
 	if jo := q.Get(`options`); jo != `` {
-		if om, ok := vf.UnmarshalJSONData([]byte(jo)).(vf.Map); ok {
+		v, err := vf.UnmarshalJSON([]byte(jo))
+		if err != nil {
+			panic(err)
+		}
+		if om, ok := v.(dgo.Map); ok {
 			opts = om
 		}
 	}
 	return &providerContext{options: opts}
 }
 
-func (c *providerContext) Option(name string) (d vf.Data) {
+func (c *providerContext) Option(name string) (d dgo.Value) {
 	if c.options != nil {
-		d = c.options[name]
+		d = c.options.Get(name)
 	}
 	return
 }
 
 func (c *providerContext) StringOption(name string) (s string, ok bool) {
-	var o vf.String
-	if o, ok = c.Option(name).(vf.String); ok {
-		s = string(o)
+	var o dgo.String
+	if o, ok = c.Option(name).(dgo.String); ok {
+		s = o.GoString()
 	}
 	return
 }
 
 func (c *providerContext) IntOption(name string) (i int, ok bool) {
-	var o vf.Int
-	if o, ok = c.Option(name).(vf.Int); ok {
-		i = int(o)
+	var o dgo.Integer
+	if o, ok = c.Option(name).(dgo.Integer); ok {
+		i = int(o.GoInt())
 	}
 	return
 }
 
 func (c *providerContext) FloatOption(name string) (f float64, ok bool) {
-	var o vf.Float
-	if o, ok = c.Option(name).(vf.Float); ok {
-		f = float64(o)
+	var o dgo.Float
+	if o, ok = c.Option(name).(dgo.Float); ok {
+		f = o.GoFloat()
 	}
 	return
 }
 
 func (c *providerContext) BoolOption(name string) (b bool, ok bool) {
-	var o vf.Bool
-	if o, ok = c.Option(name).(vf.Bool); ok {
-		b = bool(o)
+	var o dgo.Boolean
+	if o, ok = c.Option(name).(dgo.Boolean); ok {
+		b = o.GoBool()
 	}
 	return
 }
 
-func (c *providerContext) ToData(value interface{}) vf.Data {
-	return vf.ToData(value)
+func (c *providerContext) ToData(value interface{}) dgo.Value {
+	return vf.Value(value)
 }
