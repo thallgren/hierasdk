@@ -28,7 +28,7 @@ func TestNoHandler(t *testing.T) {
 func TestMetaHandler(t *testing.T) {
 	register.Clean()
 	register.DataDig(`my_dd`, func(ctx hiera.ProviderContext, key dgo.Array) dgo.Value { return nil })
-	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Value { return nil })
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Map { return nil })
 	register.LookupKey(`my_lk`, func(ctx hiera.ProviderContext, key string) dgo.Value { return nil })
 	_, m := Register()
 	ex := vf.Map(`data_dig`, vf.Values(`my_dd`), `data_hash`, vf.Values(`my_dh`), `lookup_key`, vf.Values(`my_lk`))
@@ -67,8 +67,8 @@ func TestLookupKeyHandler(t *testing.T) {
 
 func TestDataHashHandler(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Value {
-		return ctx.ToData(map[string]string{`host`: `example.com`})
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Map {
+		return ctx.ToData(map[string]string{`host`: `example.com`}).(dgo.Map)
 	})
 	testRequestResponse(t, "/data_hash/my_dh", nil, http.StatusOK, `{"host":"example.com"}`)
 	testRequestResponse(t, "/data_hash/my_rh", nil, http.StatusNotFound, `404 page not found`)
@@ -76,8 +76,11 @@ func TestDataHashHandler(t *testing.T) {
 
 func TestDataHashHandler_options(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Value {
-		return ctx.Option(`map_to_deliver`)
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Map {
+		if m, ok := ctx.Option(`map_to_deliver`).(dgo.Map); ok {
+			return m
+		}
+		return nil
 	})
 	testRequestResponse(t, "/data_hash/my_dh",
 		url.Values{`options`: {`{"map_to_deliver": {"host": "example.com"}}`}}, http.StatusOK, `{"host":"example.com"}`)
@@ -90,13 +93,13 @@ func TestDataHashHandler_options(t *testing.T) {
 
 func TestDataHashHandler_panic(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh_string_panic`, func(ctx hiera.ProviderContext) dgo.Value {
+	register.DataHash(`my_dh_string_panic`, func(ctx hiera.ProviderContext) dgo.Map {
 		panic(`goodbye`)
 	})
-	register.DataHash(`my_dh_error_panic`, func(ctx hiera.ProviderContext) dgo.Value {
+	register.DataHash(`my_dh_error_panic`, func(ctx hiera.ProviderContext) dgo.Map {
 		panic(errors.New(`goodbye error`))
 	})
-	register.DataHash(`my_dh_int_panic`, func(ctx hiera.ProviderContext) dgo.Value {
+	register.DataHash(`my_dh_int_panic`, func(ctx hiera.ProviderContext) dgo.Map {
 		panic(44)
 	})
 	testRequestResponse(t, "/data_hash/my_dh_string_panic", nil, http.StatusInternalServerError, `goodbye`)
@@ -106,8 +109,11 @@ func TestDataHashHandler_panic(t *testing.T) {
 
 func TestDataHashHandler_post(t *testing.T) {
 	register.Clean()
-	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Value {
-		return ctx.ToData(map[string]string{`host`: `example.com`})
+	register.DataHash(`my_dh`, func(ctx hiera.ProviderContext) dgo.Map {
+		if m, ok := ctx.ToData(map[string]string{`host`: `example.com`}).(dgo.Map); ok {
+			return m
+		}
+		return nil
 	})
 	r, err := http.NewRequest("POST", "/data_hash/my_dh", nil)
 	if err != nil {
