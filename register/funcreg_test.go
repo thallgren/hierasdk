@@ -32,10 +32,10 @@ func TestDataDig(t *testing.T) {
 
 func TestDataHash(t *testing.T) {
 	register.Clean()
-	register.DataHash(`l1`, func(ic hiera.ProviderContext) dgo.Value {
+	register.DataHash(`l1`, func(ic hiera.ProviderContext) dgo.Map {
 		return nil
 	})
-	register.DataHash(`l2`, func(ic hiera.ProviderContext) dgo.Value {
+	register.DataHash(`l2`, func(ic hiera.ProviderContext) dgo.Map {
 		return nil
 	})
 	x := ``
@@ -65,7 +65,7 @@ func TestCombo(t *testing.T) {
 	register.DataDig(`l1`, func(ic hiera.ProviderContext, key dgo.Array) dgo.Value {
 		return nil
 	})
-	register.DataHash(`l1`, func(ic hiera.ProviderContext) dgo.Value {
+	register.DataHash(`l1`, func(ic hiera.ProviderContext) dgo.Map {
 		return nil
 	})
 	register.LookupKey(`l1`, func(ic hiera.ProviderContext, key string) dgo.Value {

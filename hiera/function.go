@@ -11,7 +11,7 @@ type (
 
 	// DataHash is a Hiera 'data_hash' function returns a Map that Hiera can use as the source for
 	// lookups.
-	DataHash func(ic ProviderContext) dgo.Value
+	DataHash func(ic ProviderContext) dgo.Map
 
 	// LookupKey is a Hiera 'lookup_key' function returns the value that corresponds to the given key.
 	LookupKey func(ic ProviderContext, key string) dgo.Value
