@@ -3,13 +3,13 @@
 package routes
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/lyraproj/dgo/dgo"
+	"github.com/lyraproj/dgo/streamer"
 	"github.com/lyraproj/dgo/vf"
 	"github.com/lyraproj/hierasdk/hiera"
 	"github.com/lyraproj/hierasdk/register"
@@ -17,10 +17,7 @@ import (
 
 func callDataDig(q url.Values, f interface{}) dgo.Value {
 	if k := q.Get(`key`); k != `` {
-		v, err := vf.UnmarshalJSON([]byte(k))
-		if err != nil {
-			panic(err)
-		}
+		v := streamer.UnmarshalJSON([]byte(k), nil)
 		if key, ok := v.(dgo.Array); ok {
 			return f.(hiera.DataDig)(hiera.NewProviderContext(q), key)
 		}
@@ -63,9 +60,10 @@ func handleLookup(w http.ResponseWriter, r *http.Request, f func(url.Values, int
 	q := r.URL.Query()
 	err := catch(func() error {
 		if r := f(q, luFunc); r != nil {
-			return sendData(w, r)
+			sendData(w, r)
+		} else {
+			http.Error(w, `404 value not found`, http.StatusNotFound)
 		}
-		http.Error(w, `404 value not found`, http.StatusNotFound)
 		return nil
 	})
 	if err != nil {
@@ -73,9 +71,9 @@ func handleLookup(w http.ResponseWriter, r *http.Request, f func(url.Values, int
 	}
 }
 
-func sendData(w http.ResponseWriter, d dgo.Value) error {
+func sendData(w http.ResponseWriter, d dgo.Value) {
 	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(d)
+	streamer.New(nil, nil).Stream(d, streamer.JSON(w))
 }
 
 // Register create a http.ServeMux and add handlers to it for all lookup functions that has been registered with
@@ -110,7 +108,7 @@ func Register() (http.Handler, dgo.Map) {
 			handleLookup(w, r, callLookupKey, f)
 		})
 	})
-	m := vf.MutableMap(nil)
+	m := vf.MutableMap()
 	if len(dataDigNames) > 0 {
 		m.Put(`data_dig`, vf.Array(dataDigNames))
 	}

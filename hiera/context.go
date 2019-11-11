@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/lyraproj/dgo/dgo"
+	"github.com/lyraproj/dgo/streamer"
 	"github.com/lyraproj/dgo/vf"
 )
 
@@ -33,6 +34,9 @@ type (
 		// returns 0.0, false
 		FloatOption(option string) (float64, bool)
 
+		// OptionMap returns all options as an immutable Map
+		OptionsMap() dgo.Map
+
 		// ToData converts the given value into Data
 		ToData(value interface{}) dgo.Value
 	}
@@ -46,15 +50,22 @@ type (
 func NewProviderContext(q url.Values) ProviderContext {
 	var opts dgo.Map
 	if jo := q.Get(`options`); jo != `` {
-		v, err := vf.UnmarshalJSON([]byte(jo))
-		if err != nil {
-			panic(err)
-		}
+		v := streamer.UnmarshalJSON([]byte(jo), nil)
 		if om, ok := v.(dgo.Map); ok {
 			opts = om
 		}
 	}
 	return &providerContext{options: opts}
+}
+
+// ProviderContextFromMap returns a ProviderContext that contains a frozen version of the given map
+func ProviderContextFromMap(m dgo.Map) ProviderContext {
+	if m == nil {
+		m = vf.Map()
+	} else {
+		m = m.FrozenCopy().(dgo.Map)
+	}
+	return &providerContext{options: m}
 }
 
 func (c *providerContext) Option(name string) (d dgo.Value) {
@@ -94,6 +105,10 @@ func (c *providerContext) BoolOption(name string) (b bool, ok bool) {
 		b = o.GoBool()
 	}
 	return
+}
+
+func (c *providerContext) OptionsMap() dgo.Map {
+	return c.options
 }
 
 func (c *providerContext) ToData(value interface{}) dgo.Value {

@@ -47,7 +47,7 @@ func TestDataDigHandler(t *testing.T) {
 	})
 	testRequestResponse(t, "/data_dig/my_dd", url.Values{`key`: {`["config", "path"]`}}, http.StatusOK, `"/a/b"`)
 	testRequestResponse(t, "/data_dig/my_dd", url.Values{`key`: {`"config"`}}, http.StatusNotFound, `404 value not found`)
-	testRequestResponse(t, "/data_dig/my_dd", url.Values{`key`: {`["config", "path"`}}, http.StatusInternalServerError, `EOF`)
+	testRequestResponse(t, "/data_dig/my_dd", url.Values{`key`: {`["config", "path"`}}, http.StatusInternalServerError, `unexpected EOF`)
 	testRequestResponse(t, "/data_dig/my_rd", nil, http.StatusNotFound, `404 page not found`)
 }
 
@@ -88,7 +88,7 @@ func TestDataHashHandler_options(t *testing.T) {
 		url.Values{`options`: {`{"no_map_to_deliver": {"host": "example.com"}}`}}, http.StatusNotFound, `404 value not found`)
 	testRequestResponse(t, "/data_hash/my_dh", nil, http.StatusNotFound, `404 value not found`)
 	testRequestResponse(t, "/data_hash/my_dh",
-		url.Values{`options`: {`{"map_to_deliver": {"host": "example.com"}`}}, http.StatusInternalServerError, `EOF`)
+		url.Values{`options`: {`{"map_to_deliver": {"host": "example.com"}`}}, http.StatusInternalServerError, `unexpected EOF`)
 }
 
 func TestDataHashHandler_panic(t *testing.T) {
