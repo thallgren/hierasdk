@@ -3,9 +3,19 @@ package hiera
 import (
 	"testing"
 
+	"github.com/lyraproj/dgo/dgo"
+
 	require "github.com/lyraproj/dgo/dgo_test"
 	"github.com/lyraproj/dgo/vf"
 )
+
+func TestProviderContextFromMap(t *testing.T) {
+	pc := ProviderContextFromMap(nil)
+	require.Equal(t, vf.Map(), pc.OptionsMap())
+
+	pc = ProviderContextFromMap(vf.MutableMap(`a`, vf.MutableValues(1, 2, 3)))
+	require.True(t, pc.Option(`a`).(dgo.Array).Frozen())
+}
 
 func TestProviderContext_StringOption(t *testing.T) {
 	c := &providerContext{options: vf.Map(`s`, `a`, `i`, 2)}
