@@ -5,7 +5,6 @@ package plugin
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	"github.com/lyraproj/dgo/dgo"
+	"github.com/lyraproj/dgo/streamer"
 	"github.com/lyraproj/dgo/vf"
 	"github.com/lyraproj/hierasdk/hiera"
 	"github.com/lyraproj/hierasdk/routes"
@@ -106,11 +106,9 @@ func getEnvInt(n string, defaultValue int) int {
 }
 
 func startServer(listener net.Listener, router http.Handler, functions dgo.Map, ow, ew io.Writer) int {
-	err := json.NewEncoder(ow).Encode(vf.Map(`version`, hiera.ProtoVersion, `network`, listener.Addr().Network(), `address`, listener.Addr().String(), `functions`, functions))
-	if err != nil {
-		_, _ = fmt.Fprintln(ew, err)
-		return 1
-	}
+	streamer.New(nil, nil).Stream(
+		vf.Map(`version`, hiera.ProtoVersion, `network`, listener.Addr().Network(), `address`, listener.Addr().String(), `functions`, functions),
+		streamer.JSON(ow))
 
 	server := http.Server{Handler: router}
 	done := make(chan bool, 1)
@@ -129,7 +127,7 @@ func startServer(listener net.Listener, router http.Handler, functions dgo.Map, 
 		close(done)
 	}()
 
-	if err = server.Serve(listener); err != nil && err != http.ErrServerClosed {
+	if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 		_, _ = fmt.Fprintf(ew, "Could not listen on %s: %v\n", listener.Addr(), err)
 		return 1
 	}
