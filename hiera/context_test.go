@@ -3,22 +3,12 @@ package hiera
 import (
 	"testing"
 
-	"github.com/lyraproj/dgo/dgo"
-
 	require "github.com/lyraproj/dgo/dgo_test"
 	"github.com/lyraproj/dgo/vf"
 )
 
-func TestProviderContextFromMap(t *testing.T) {
-	pc := ProviderContextFromMap(nil)
-	require.Equal(t, vf.Map(), pc.OptionsMap())
-
-	pc = ProviderContextFromMap(vf.MutableMap(`a`, vf.MutableValues(1, 2, 3)))
-	require.True(t, pc.Option(`a`).(dgo.Array).Frozen())
-}
-
 func TestProviderContext_StringOption(t *testing.T) {
-	c := &providerContext{options: vf.Map(`s`, `a`, `i`, 2)}
+	c := ProviderContextFromMap(vf.Map(`s`, `a`, `i`, 2))
 	s, ok := c.StringOption(`s`)
 	require.True(t, ok)
 	require.Equal(t, `a`, s)
@@ -27,7 +17,7 @@ func TestProviderContext_StringOption(t *testing.T) {
 }
 
 func TestProviderContext_IntOption(t *testing.T) {
-	c := &providerContext{options: vf.Map(`s`, `a`, `i`, 2)}
+	c := ProviderContextFromMap(vf.Map(`s`, `a`, `i`, 2))
 	i, ok := c.IntOption(`i`)
 	require.True(t, ok)
 	require.Equal(t, 2, i)
@@ -36,7 +26,7 @@ func TestProviderContext_IntOption(t *testing.T) {
 }
 
 func TestProviderContext_FloatOption(t *testing.T) {
-	c := &providerContext{options: vf.Map(`s`, `a`, `f`, 2.0)}
+	c := ProviderContextFromMap(vf.Map(`s`, `a`, `f`, 2.0))
 	f, ok := c.FloatOption(`f`)
 	require.True(t, ok)
 	require.Equal(t, 2.0, f)
@@ -45,10 +35,15 @@ func TestProviderContext_FloatOption(t *testing.T) {
 }
 
 func TestProviderContext_BoolOption(t *testing.T) {
-	c := &providerContext{options: vf.Map(`s`, `a`, `b`, false)}
+	c := ProviderContextFromMap(vf.Map(`s`, `a`, `b`, false))
 	b, ok := c.BoolOption(`b`)
 	require.True(t, ok)
 	require.Equal(t, false, b)
 	_, ok = c.BoolOption(`s`)
 	require.False(t, ok)
+}
+
+func TestProviderContext_OptionsMap(t *testing.T) {
+	c := ProviderContextFromMap(nil)
+	require.Equal(t, vf.Map(), c.OptionsMap())
 }
