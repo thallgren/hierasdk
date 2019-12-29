@@ -52,8 +52,17 @@ func Serve(name string, minPort, maxPort int, stdout, stderr io.Writer) int {
 }
 
 func getTCPListener(minPort, maxPort int) (net.Listener, error) {
+	var listener net.Listener
+	var err error
+
+	sock := os.Getenv("HIERA_PLUGIN_SOCKET")
+
 	for port := minPort; port <= maxPort; port++ {
-		listener, err := net.Listen(`tcp`, `127.0.0.1:`+strconv.Itoa(port))
+		if sock == "" {
+			listener, err = net.Listen(`tcp`, `127.0.0.1:`+strconv.Itoa(port))
+		} else {
+			listener, err = net.Listen(`unix`, sock)
+		}
 		if err == nil {
 			return listener, nil
 		}
@@ -71,7 +80,7 @@ func getEnvInt(n string, defaultValue int) int {
 }
 
 func startServer(listener net.Listener, router http.Handler, functions dgo.Map, ow, ew io.Writer) int {
-	err := json.NewEncoder(ow).Encode(vf.Map(`version`, hiera.ProtoVersion, `address`, listener.Addr().String(), `functions`, functions))
+	err := json.NewEncoder(ow).Encode(vf.Map(`version`, hiera.ProtoVersion, `network`, listener.Addr().Network(), `address`, listener.Addr().String(), `functions`, functions))
 	if err != nil {
 		_, _ = fmt.Fprintln(ew, err)
 		return 1
