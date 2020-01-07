@@ -93,7 +93,7 @@ func tempFile(dir, prefix string) (string, error) {
 			return path, nil
 		}
 
-		filename = filename + strconv.Itoa(seed.Int())[:1]
+		filename += strconv.Itoa(seed.Int())[:1]
 	}
 
 	return "", fmt.Errorf("failed to generate temporary file in %s", dir)
