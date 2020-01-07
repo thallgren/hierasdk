@@ -8,10 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -42,7 +45,16 @@ func Serve(name string, minPort, maxPort int, stdout, stderr io.Writer) int {
 		_, _ = fmt.Fprintf(os.Stderr, "min port %d is greater than max port %d\n", minPort, maxPort)
 		return 1
 	}
-	listener, err := getTCPListener(minPort, maxPort)
+
+	sockDir := os.Getenv("HIERA_PLUGIN_SOCKET_DIR")
+
+	var listener net.Listener
+	var err error
+	if sockDir == "" {
+		listener, err = getTCPListener(minPort, maxPort)
+	} else {
+		listener, err = getSocketListener(sockDir, path.Base(name))
+	}
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err.Error())
 		return 1
@@ -52,22 +64,48 @@ func Serve(name string, minPort, maxPort int, stdout, stderr io.Writer) int {
 }
 
 func getTCPListener(minPort, maxPort int) (net.Listener, error) {
-	var listener net.Listener
-	var err error
-
-	sock := os.Getenv("HIERA_PLUGIN_SOCKET")
-
 	for port := minPort; port <= maxPort; port++ {
-		if sock == "" {
-			listener, err = net.Listen(`tcp`, `127.0.0.1:`+strconv.Itoa(port))
-		} else {
-			listener, err = net.Listen(`unix`, sock)
-		}
+		listener, err := net.Listen(`tcp`, `127.0.0.1:`+strconv.Itoa(port))
 		if err == nil {
 			return listener, nil
 		}
 	}
 	return nil, fmt.Errorf(`no available port in the range %d to %d`, minPort, maxPort)
+}
+
+var tempFileAttempts = 10
+
+// tempFile generates random file name in a given directory
+// file name has a form of <plugin-name><random-string>.socket
+// the function returns an error is given directory doesn't exist.
+func tempFile(dir, prefix string) (string, error) {
+	fi, err := os.Lstat(dir)
+	if err != nil || !fi.IsDir() {
+		return "", fmt.Errorf("path is not a directory %s", dir)
+	}
+
+	filename := prefix
+	seed := rand.New(rand.NewSource(int64(time.Now().UnixNano() + int64(os.Getpid()))))
+
+	for i := 0; i < tempFileAttempts; i++ {
+		path := filepath.Join(dir, filename+".socket")
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return path, nil
+		}
+
+		filename = filename + strconv.Itoa(seed.Int())[:1]
+	}
+
+	return "", fmt.Errorf("failed to generate temporary file in %s", dir)
+}
+
+func getSocketListener(dir, name string) (net.Listener, error) {
+	socket, err := tempFile(dir, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return net.Listen(`unix`, socket)
 }
 
 func getEnvInt(n string, defaultValue int) int {
