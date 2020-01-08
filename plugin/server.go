@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -46,14 +45,18 @@ func Serve(name string, minPort, maxPort int, stdout, stderr io.Writer) int {
 		return 1
 	}
 
+	pluginTransport := os.Getenv("HIERA_PLUGIN_TRANSPORT")
 	sockDir := os.Getenv("HIERA_PLUGIN_SOCKET_DIR")
 
 	var listener net.Listener
 	var err error
-	if sockDir == "" {
-		listener, err = getTCPListener(minPort, maxPort)
-	} else {
+	switch pluginTransport {
+	case `unix`:
 		listener, err = getSocketListener(sockDir, path.Base(name))
+	case `tcp`:
+		listener, err = getTCPListener(minPort, maxPort)
+	default:
+		err = fmt.Errorf("no valid transport configuration found, is HIERA_PLUGIN_TRANSPORT set?")
 	}
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err.Error())
@@ -73,34 +76,19 @@ func getTCPListener(minPort, maxPort int) (net.Listener, error) {
 	return nil, fmt.Errorf(`no available port in the range %d to %d`, minPort, maxPort)
 }
 
-var tempFileAttempts = 10
-
-// tempFile generates random file name in a given directory
-// file name has a form of <plugin-name><random-string>.socket
+// tempFileName generates a uniq per process file name in a given directory
 // the function returns an error is given directory doesn't exist.
-func tempFile(dir, prefix string) (string, error) {
+func tempFileName(dir, prefix string) (string, error) {
 	fi, err := os.Lstat(dir)
 	if err != nil || !fi.IsDir() {
 		return "", fmt.Errorf("path is not a directory %s", dir)
 	}
 
-	filename := prefix
-	seed := rand.New(rand.NewSource(int64(time.Now().UnixNano() + int64(os.Getpid()))))
-
-	for i := 0; i < tempFileAttempts; i++ {
-		path := filepath.Join(dir, filename+".socket")
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			return path, nil
-		}
-
-		filename += strconv.Itoa(seed.Int())[:1]
-	}
-
-	return "", fmt.Errorf("failed to generate temporary file in %s", dir)
+	return filepath.Join(dir, prefix+"-"+strconv.Itoa(os.Getpid())+".socket"), nil
 }
 
 func getSocketListener(dir, name string) (net.Listener, error) {
-	socket, err := tempFile(dir, name)
+	socket, err := tempFileName(dir, name)
 	if err != nil {
 		return nil, err
 	}
