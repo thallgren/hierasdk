@@ -107,7 +107,11 @@ func getEnvInt(n string, defaultValue int) int {
 
 func startServer(listener net.Listener, router http.Handler, functions dgo.Map, ow, ew io.Writer) int {
 	streamer.New(nil, nil).Stream(
-		vf.Map(`version`, hiera.ProtoVersion, `network`, listener.Addr().Network(), `address`, listener.Addr().String(), `functions`, functions),
+		vf.Map(
+			`version`, hiera.ProtoVersion,
+			`network`, listener.Addr().Network(),
+			`address`, listener.Addr().String(),
+			`functions`, functions),
 		streamer.JSON(ow))
 
 	server := http.Server{Handler: router}
