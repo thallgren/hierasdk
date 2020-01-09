@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -42,7 +44,20 @@ func Serve(name string, minPort, maxPort int, stdout, stderr io.Writer) int {
 		_, _ = fmt.Fprintf(os.Stderr, "min port %d is greater than max port %d\n", minPort, maxPort)
 		return 1
 	}
-	listener, err := getTCPListener(minPort, maxPort)
+
+	pluginTransport := os.Getenv("HIERA_PLUGIN_TRANSPORT")
+	sockDir := os.Getenv("HIERA_PLUGIN_SOCKET_DIR")
+
+	var listener net.Listener
+	var err error
+	switch pluginTransport {
+	case `unix`:
+		listener, err = getSocketListener(sockDir, path.Base(name))
+	case `tcp`:
+		listener, err = getTCPListener(minPort, maxPort)
+	default:
+		err = fmt.Errorf("no valid transport configuration found, is HIERA_PLUGIN_TRANSPORT set?")
+	}
 	if err != nil {
 		_, _ = fmt.Fprintln(os.Stderr, err.Error())
 		return 1
@@ -61,6 +76,26 @@ func getTCPListener(minPort, maxPort int) (net.Listener, error) {
 	return nil, fmt.Errorf(`no available port in the range %d to %d`, minPort, maxPort)
 }
 
+// tempFileName generates a uniq per process file name in a given directory
+// the function returns an error is given directory doesn't exist.
+func tempFileName(dir, prefix string) (string, error) {
+	fi, err := os.Lstat(dir)
+	if err != nil || !fi.IsDir() {
+		return "", fmt.Errorf("path is not a directory %s", dir)
+	}
+
+	return filepath.Join(dir, prefix+"-"+strconv.Itoa(os.Getpid())+".socket"), nil
+}
+
+func getSocketListener(dir, name string) (net.Listener, error) {
+	socket, err := tempFileName(dir, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return net.Listen(`unix`, socket)
+}
+
 func getEnvInt(n string, defaultValue int) int {
 	if v := os.Getenv(n); len(v) > 0 {
 		if i, err := strconv.Atoi(v); err == nil {
@@ -71,7 +106,7 @@ func getEnvInt(n string, defaultValue int) int {
 }
 
 func startServer(listener net.Listener, router http.Handler, functions dgo.Map, ow, ew io.Writer) int {
-	err := json.NewEncoder(ow).Encode(vf.Map(`version`, hiera.ProtoVersion, `address`, listener.Addr().String(), `functions`, functions))
+	err := json.NewEncoder(ow).Encode(vf.Map(`version`, hiera.ProtoVersion, `network`, listener.Addr().Network(), `address`, listener.Addr().String(), `functions`, functions))
 	if err != nil {
 		_, _ = fmt.Fprintln(ew, err)
 		return 1
