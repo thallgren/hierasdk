@@ -1,4 +1,4 @@
-name: Hiera SDK Build
+name: Hiera SDK Test
 on: [push, pull_request]
 jobs:
 
